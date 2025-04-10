@@ -2,69 +2,77 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
+declare_id!("BFE9WxmarY7Mw1xPHa4Q2jt963eNzcqXd7v8teG6hv7h");
 
 #[program]
 pub mod cdemo {
     use super::*;
 
-  pub fn close(_ctx: Context<CloseCdemo>) -> Result<()> {
-    Ok(())
-  }
+    pub fn initialize_result(ctx: Context<InitializeResult>) -> Result<()> {
+        ctx.accounts.calci.result = 0;
+        Ok(())
+    }
+    pub fn add(ctx: Context<Add>, a: i64, b: i64) -> Result<()> {
+        ctx.accounts.calci.result = a + b;
+        Ok(())
+    }
+    pub fn sub(ctx: Context<Sub>, a: i64, b: i64) -> Result<()> {
+        if a > b {
+            ctx.accounts.calci.result = a - b;
+        } else {
+            ctx.accounts.calci.result = b - a;
+        }
 
-  pub fn decrement(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.cdemo.count = ctx.accounts.cdemo.count.checked_sub(1).unwrap();
-    Ok(())
-  }
-
-  pub fn increment(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.cdemo.count = ctx.accounts.cdemo.count.checked_add(1).unwrap();
-    Ok(())
-  }
-
-  pub fn initialize(_ctx: Context<InitializeCdemo>) -> Result<()> {
-    Ok(())
-  }
-
-  pub fn set(ctx: Context<Update>, value: u8) -> Result<()> {
-    ctx.accounts.cdemo.count = value.clone();
-    Ok(())
-  }
+        Ok(())
+    }
+    pub fn div(ctx: Context<Div>, a: i64, b: i64) -> Result<()> {
+        require!(b != 0, ErrorCode::DivisionByZero);
+        ctx.accounts.calci.result = a / b;
+        Ok(())
+    }
+    pub fn mul(ctx: Context<Mul>, a: i64, b: i64) -> Result<()> {
+        ctx.accounts.calci.result = a * b;
+        Ok(())
+    }
 }
 
-#[derive(Accounts)]
-pub struct InitializeCdemo<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
-
-  #[account(
-  init,
-  space = 8 + Cdemo::INIT_SPACE,
-  payer = payer
-  )]
-  pub cdemo: Account<'info, Cdemo>,
-  pub system_program: Program<'info, System>,
+#[error_code]
+pub enum ErrorCode {
+    DivisionByZero,
 }
-#[derive(Accounts)]
-pub struct CloseCdemo<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
-
-  #[account(
-  mut,
-  close = payer, // close account and return lamports to payer
-  )]
-  pub cdemo: Account<'info, Cdemo>,
-}
-
-#[derive(Accounts)]
-pub struct Update<'info> {
-  #[account(mut)]
-  pub cdemo: Account<'info, Cdemo>,
-}
-
 #[account]
 #[derive(InitSpace)]
-pub struct Cdemo {
-  count: u8,
+pub struct ResultValue {
+    result: i64,
+}
+#[derive(Accounts)]
+pub struct InitializeResult<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(init,space=8+ResultValue::INIT_SPACE,payer=payer)]
+    pub calci: Account<'info, ResultValue>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Add<'info> {
+    #[account(mut)]
+    pub calci: Account<'info, ResultValue>,
+}
+#[derive(Accounts)]
+pub struct Sub<'info> {
+    #[account(mut)]
+    pub calci: Account<'info, ResultValue>,
+}
+#[derive(Accounts)]
+pub struct Div<'info> {
+    #[account(mut)]
+    pub calci: Account<'info, ResultValue>,
+}
+#[derive(Accounts)]
+pub struct Mul<'info> {
+    #[account(mut)]
+    pub calci: Account<'info, ResultValue>,
 }

@@ -21,7 +21,7 @@ export function getCdemoProgramId(cluster: Cluster) {
     case 'devnet':
     case 'testnet':
       // This is the program ID for the Cdemo program on devnet and testnet.
-      return new PublicKey('coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF')
+      return new PublicKey('BFE9WxmarY7Mw1xPHa4Q2jt963eNzcqXd7v8teG6hv7h')
     case 'mainnet-beta':
     default:
       return CDEMO_PROGRAM_ID

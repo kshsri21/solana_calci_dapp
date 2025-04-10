@@ -6,6 +6,7 @@ import { AppHero, ellipsify } from '../ui/ui-layout'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCdemoProgram } from './cdemo-data-access'
 import { CdemoCreate, CdemoList } from './cdemo-ui'
+// import { CdemoCreate } from './cdemo-ui'
 
 export default function CdemoFeature() {
   const { publicKey } = useWallet()

@@ -1,14 +1,16 @@
 'use client'
 
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { useMemo } from 'react'
 import { ellipsify } from '../ui/ui-layout'
 import { ExplorerLink } from '../cluster/cluster-ui'
+import { useState } from "react";
 import { useCdemoProgram, useCdemoProgramAccount } from './cdemo-data-access'
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useMemo } from "react"
 
 export function CdemoCreate() {
   const { initialize } = useCdemoProgram()
-
+  // const { publicKey } = useWallet();
   return (
     <button
       className="btn btn-xs lg:btn-md btn-primary"
@@ -18,6 +20,24 @@ export function CdemoCreate() {
       Create {initialize.isPending && '...'}
     </button>
   )
+
+  // const handleSubmit = () => {
+  //   if (publicKey) {
+  //     initialize.mutateAsync(publicKey)
+  //   }
+  // }
+  // if (!publicKey) {
+  //   return <p>Connect Your Wallet</p>
+  // }
+  // return (
+  //   <button
+  //     className="btn btn-xs lg:btn-md btn-primary"
+  //     onClick={handleSubmit}
+  //     disabled={initialize.isPending}
+  //   >
+  //     Create {initialize.isPending && '...'}
+  //   </button>
+  // )
 }
 
 export function CdemoList() {
@@ -54,11 +74,9 @@ export function CdemoList() {
 }
 
 function CdemoCard({ account }: { account: PublicKey }) {
-  const { accountQuery, incrementMutation, setMutation, decrementMutation, closeMutation } = useCdemoProgramAccount({
-    account,
-  })
+  const { accountQuery, addValues, subValues } = useCdemoProgramAccount({ account })
 
-  const count = useMemo(() => accountQuery.data?.count ?? 0, [accountQuery.data?.count])
+  const result = useMemo(() => accountQuery.data?.result ?? 0, [accountQuery.data?.result])
 
   return accountQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
@@ -67,53 +85,50 @@ function CdemoCard({ account }: { account: PublicKey }) {
       <div className="card-body items-center text-center">
         <div className="space-y-6">
           <h2 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
-            {count}
+            {result.toString()}
           </h2>
           <div className="card-actions justify-around">
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => incrementMutation.mutateAsync()}
-              disabled={incrementMutation.isPending}
-            >
-              Increment
-            </button>
+
             <button
               className="btn btn-xs lg:btn-md btn-outline"
               onClick={() => {
-                const value = window.prompt('Set value to:', count.toString() ?? '0')
-                if (!value || parseInt(value) === count || isNaN(parseInt(value))) {
+                const a = window.prompt('Value of a:', result.toString() ?? '0')
+                const b = window.prompt('Value of b:', result.toString() ?? '0')
+                if (!a || parseInt(a) === result || isNaN(parseInt(a))) {
                   return
                 }
-                return setMutation.mutateAsync(parseInt(value))
+                if (!b || parseInt(b) === result || isNaN(parseInt(b))) {
+                  return
+                }
+                return addValues.mutateAsync({ a: parseInt(a), b: parseInt(b) })
               }}
-              disabled={setMutation.isPending}
+              disabled={addValues.isPending}
             >
-              Set
+              Add Values
             </button>
+
             <button
               className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => decrementMutation.mutateAsync()}
-              disabled={decrementMutation.isPending}
+              onClick={() => {
+                const a = window.prompt('Value of a:', result.toString() ?? '0')
+                const b = window.prompt('Value of b:', result.toString() ?? '0')
+                if (!a || parseInt(a) === result || isNaN(parseInt(a))) {
+                  return
+                }
+                if (!b || parseInt(b) === result || isNaN(parseInt(b))) {
+                  return
+                }
+                return subValues.mutateAsync({ a: parseInt(a), b: parseInt(b) })
+              }}
+              disabled={subValues.isPending}
             >
-              Decrement
+              Sub Values
             </button>
           </div>
           <div className="text-center space-y-4">
             <p>
               <ExplorerLink path={`account/${account}`} label={ellipsify(account.toString())} />
             </p>
-            <button
-              className="btn btn-xs btn-secondary btn-outline"
-              onClick={() => {
-                if (!window.confirm('Are you sure you want to close this account?')) {
-                  return
-                }
-                return closeMutation.mutateAsync()
-              }}
-              disabled={closeMutation.isPending}
-            >
-              Close
-            </button>
           </div>
         </div>
       </div>

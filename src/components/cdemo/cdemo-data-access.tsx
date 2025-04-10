@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../ui/ui-layout'
+import BN from "bn.js"
 
 export function useCdemoProgram() {
   const { connection } = useConnection()
@@ -18,26 +19,47 @@ export function useCdemoProgram() {
   const programId = useMemo(() => getCdemoProgramId(cluster.network as Cluster), [cluster])
   const program = useMemo(() => getCdemoProgram(provider, programId), [provider, programId])
 
+  //console.log("programId:", programId);
+  console.log("programId:", programId.toBase58());
+  console.log("program:", program);
+
   const accounts = useQuery({
     queryKey: ['cdemo', 'all', { cluster }],
-    queryFn: () => program.account.cdemo.all(),
+    queryFn: () => program.account.resultValue.all(),
   })
 
+  //console.log("accounts:", accounts);
+  console.log("Fetched accounts data:", accounts.data);
+
+  if (accounts?.data) {
+    accounts.data.forEach((item, index) => {
+      console.log(`Public Key ${index}:`, item.publicKey.toBase58());
+    });
+  }
   const getProgramAccount = useQuery({
     queryKey: ['get-program-account', { cluster }],
     queryFn: () => connection.getParsedAccountInfo(programId),
   })
 
+  console.log("getProgramAccount:", getProgramAccount);
+
   const initialize = useMutation({
-    mutationKey: ['cdemo', 'initialize', { cluster }],
-    mutationFn: (keypair: Keypair) =>
-      program.methods.initialize().accounts({ cdemo: keypair.publicKey }).signers([keypair]).rpc(),
+    mutationKey: ['cdemo', 'initialize_result', { cluster }],
+    mutationFn: (keypair: Keypair) => {
+      console.log("Keypair:", keypair.publicKey.toBase58());
+      return program.methods
+        .initializeResult()
+        .accounts({ calci: keypair.publicKey })
+        .signers([keypair])
+        .rpc(); // this returns a Promise<string> (the tx signature)
+    },
     onSuccess: (signature) => {
-      transactionToast(signature)
-      return accounts.refetch()
+      transactionToast(signature);
+      return accounts.refetch(); // optionally wait for refetch to complete
     },
     onError: () => toast.error('Failed to initialize account'),
-  })
+  });
+
 
   return {
     program,
@@ -55,50 +77,41 @@ export function useCdemoProgramAccount({ account }: { account: PublicKey }) {
 
   const accountQuery = useQuery({
     queryKey: ['cdemo', 'fetch', { cluster, account }],
-    queryFn: () => program.account.cdemo.fetch(account),
+    queryFn: () => program.account.resultValue.fetch(account),
   })
+  console.log("accountQuery:", accountQuery);
 
-  const closeMutation = useMutation({
-    mutationKey: ['cdemo', 'close', { cluster, account }],
-    mutationFn: () => program.methods.close().accounts({ cdemo: account }).rpc(),
+  const addValues = useMutation({
+    mutationKey: ['cdemo', 'add', { cluster }],
+    mutationFn: async ({ a, b }: { a: number; b: number }) => {
+      return await program.methods
+        .add(new BN(a), new BN(b))
+        .accounts({ calci: account })
+        .rpc();
+    },
     onSuccess: (tx) => {
       transactionToast(tx)
       return accounts.refetch()
     },
   })
 
-  const decrementMutation = useMutation({
-    mutationKey: ['cdemo', 'decrement', { cluster, account }],
-    mutationFn: () => program.methods.decrement().accounts({ cdemo: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+  const subValues = useMutation({
+    mutationKey: ['cdemo', 'sub', { cluster }],
+    mutationFn: async ({ a, b }: { a: number; b: number }) => {
+      return await program.methods
+        .sub(new BN(a), new BN(b))
+        .accounts({ calci: account })
+        .rpc();
     },
-  })
-
-  const incrementMutation = useMutation({
-    mutationKey: ['cdemo', 'increment', { cluster, account }],
-    mutationFn: () => program.methods.increment().accounts({ cdemo: account }).rpc(),
     onSuccess: (tx) => {
       transactionToast(tx)
-      return accountQuery.refetch()
-    },
-  })
-
-  const setMutation = useMutation({
-    mutationKey: ['cdemo', 'set', { cluster, account }],
-    mutationFn: (value: number) => program.methods.set(value).accounts({ cdemo: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+      return accounts.refetch()
     },
   })
 
   return {
     accountQuery,
-    closeMutation,
-    decrementMutation,
-    incrementMutation,
-    setMutation,
+    addValues,
+    subValues
   }
 }
