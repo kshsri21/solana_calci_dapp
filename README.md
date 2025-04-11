@@ -21,6 +21,11 @@ Follow these simple steps to get the DApp up and running on your local machine.
 
 ## 🧩 Setup Instructions
 
+### 0. Install dependencies
+```bash
+npm install
+```
+
 ### 1. Launch WSL (If you're using Windows)
 ```bash
 wsl
